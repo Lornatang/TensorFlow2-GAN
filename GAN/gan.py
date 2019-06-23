@@ -206,7 +206,7 @@ def train(dataset, epochs):
       model.train_step(image_batch)
 
     # Produce images for the GIF as we go
-    generate_and_save_images(model.generator,
+    generate_and_save_images(model.gen,
                              epoch + 1,
                              seed)
 
@@ -217,7 +217,7 @@ def train(dataset, epochs):
     print(f'Time for epoch {epoch + 1} is {time.time() - start:.3f} sec.')
 
   # Generate after the final epoch
-  generate_and_save_images(model.generator,
+  generate_and_save_images(model.gen,
                            epochs,
                            seed)
 
