@@ -294,5 +294,5 @@ def create_gif(file_name):
 
 if __name__ == '__main__':
   train_images = load_data(BUFFER_SIZE, BATCH_SIZE)
-  train(train_images, epochs=50)
+  train(train_images, epochs=200)
   create_gif('wgan_gp.gif')
