@@ -46,7 +46,7 @@ BUFFER_SIZE = 60000
 BATCH_SIZE = 256
 
 EPOCHS = 50
-noise_dim = 100
+noise_dim = 256
 num_examples_to_generate = 16
 
 img_shape = (28, 28, 1)
@@ -323,5 +323,5 @@ def create_gif(file_name):
 
 if __name__ == '__main__':
   train_images = load_data(BUFFER_SIZE, BATCH_SIZE)
-  train(train_images, epochs=200)
+  train(train_images, epochs=EPOCHS)
   create_gif('gan.gif')
