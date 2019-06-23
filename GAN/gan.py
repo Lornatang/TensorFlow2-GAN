@@ -292,7 +292,6 @@ def train(dataset, epochs):
       train_step(image_batch)
 
     # Produce images for the GIF as we go
-    display.clear_output(wait=True)
     generate_and_save_images(generator,
                              epoch + 1,
                              seed)
@@ -301,10 +300,9 @@ def train(dataset, epochs):
     if (epoch + 1) % 15 == 0:
       checkpoint.save(file_prefix=checkpoint_prefix)
 
-    print('Time for epoch {} is {} sec'.format(epoch + 1, time.time() - start))
+    print(f'Time for epoch {epoch + 1} is {time.time() - start:.4f} sec')
 
   # Generate after the final epoch
-  display.clear_output(wait=True)
   generate_and_save_images(generator,
                            epochs,
                            seed)
