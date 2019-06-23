@@ -185,6 +185,10 @@ checkpoint = tf.train.Checkpoint(generator_optimizer=model.generator_optimizer,
                                  generator=model.gen,
                                  discriminator=model.disc)
 
+# create dir
+if not os.path.exists(checkpoint_dir):
+  os.makedirs(checkpoint_dir)
+
 
 def train(dataset, epochs):
   """ train op
