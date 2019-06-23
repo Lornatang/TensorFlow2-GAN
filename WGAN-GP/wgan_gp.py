@@ -191,7 +191,7 @@ cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
 
 def gradient_penalty(real_img, generated_images):
-  epsilon = tf.random.uniform([real_img.shape[0],28, 28, 1], 0.0, 1.0)
+  epsilon = tf.random.uniform([BATCH_SIZE, 1, 1, 1], 0.0, 1.0)
   x_hat = epsilon * real_img + (1 - epsilon) * generated_images
   with tf.GradientTape() as t:
     t.watch(x_hat)
