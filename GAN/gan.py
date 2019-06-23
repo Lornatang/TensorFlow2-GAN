@@ -82,7 +82,7 @@ def load_data(buffer_size, batch_size):
 
 # Both the generator and discriminator are defined using the Keras Sequential API.
 def make_generator_model(input_tensor=None,
-                         input_shape=(100,)):
+                         input_shape=(256,)):
   """
 
   Returns:
