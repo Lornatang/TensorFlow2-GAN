@@ -125,3 +125,7 @@ dmypy.json
 .png
 .jpeg
 .jpg
+
+# model file
+checkpoint
+ckpt*
