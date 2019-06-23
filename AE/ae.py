@@ -64,7 +64,7 @@ def load_data(buffer_size, batch_size):
 
   # split datasets
   train_images = train_images.reshape(train_images.shape[0], 28, 28, 1).astype('float32')
-  train_images = train_images / 127.5  # Normalize the images to [-1, 1]
+  train_images = train_images / 255.0  # Normalize the images to [0, 1]
 
   # Batch and shuffle the data
   train_dataset = (
