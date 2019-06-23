@@ -44,7 +44,7 @@ BUFFER_SIZE = 60000
 BATCH_SIZE = 256
 
 EPOCHS = 50
-noise_dim = 100
+noise_dim = 256
 num_examples_to_generate = 16
 
 img_shape = (28, 28, 1)
@@ -82,7 +82,7 @@ def load_data(buffer_size, batch_size):
 
 # Both the generator and discriminator are defined using the Keras Sequential API.
 def make_generator_model(input_tensor=None,
-                         input_shape=(100,)):
+                         input_shape=(noise_dim,)):
   """
 
   Returns:
