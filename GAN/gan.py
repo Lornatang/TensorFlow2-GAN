@@ -106,29 +106,30 @@ class GAN(tf.keras.Model):
 
     self.gen = tf.keras.Sequential([
       layers.Dense(units=7 * 7 * 64, input_shape=(noise_dim, )),
-      layers.ReLU(),
+      layers.LeakyReLU(),
 
       layers.Reshape(target_shape=(7, 7, 64)),
 
       layers.Conv2DTranspose(64, (3, 3), strides=(2, 2),
                              padding='same'),
-      layers.ReLU(),
+      layers.LeakyReLU(),
       layers.Conv2DTranspose(32, (3, 3), strides=(2, 2),
                              padding='same'),
-      layers.ReLU(),
+      layers.LeakyReLU(),
       layers.Conv2DTranspose(1, (3, 3), strides=(1, 1),
-                             padding='same')]
+                             padding='same',
+                             activation=tf.nn.tanh)]
     )
     self.disc = tf.keras.Sequential([
       layers.InputLayer(input_shape=self.dims),
-      layers.Conv2D(32, (3, 3),
-                    strides=(2, 2),
-                    padding='same'),
-      layers.ReLU(),
       layers.Conv2D(64, (3, 3),
                     strides=(2, 2),
                     padding='same'),
-      layers.ReLU(),
+      layers.LeakyReLU(),
+      layers.Conv2D(128, (3, 3),
+                    strides=(2, 2),
+                    padding='same'),
+      layers.LeakyReLU(),
 
       layers.Flatten(),
       layers.Dense(units=1, activation=None)]
