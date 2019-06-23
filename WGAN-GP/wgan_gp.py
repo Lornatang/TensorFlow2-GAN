@@ -21,7 +21,10 @@ import os
 import time
 
 import tensorflow as tf
+from tensorflow.python.keras import backend
 from tensorflow.python.keras import layers
+from tensorflow.python.keras import models
+from tensorflow.python.keras import utils
 
 import imageio
 import matplotlib.pyplot as plt
@@ -29,9 +32,9 @@ from PIL import Image
 from IPython import display
 
 # check tf version
-assert tf.__version__ == '2.0.0-beta1'
-"""TensorFlow version must equal '2.0.0-beta1', 
-   please run `pip install -q tensorflow-gpu==2.0.0-beta1"""
+if not tf.__version__ == '2.0.0-beta1':
+  raise Exception("TensorFlow version must equal '2.0.0-beta1', "
+                  "please run `pip install -q tensorflow-gpu==2.0.0-beta1")
 
 # Load and prepare the dataset
 """You will use the MNIST dataset to train the generator and the discriminator. 
@@ -78,63 +81,109 @@ def load_data(buffer_size, batch_size):
 
 
 # Both the generator and discriminator are defined using the Keras Sequential API.
-def make_generator_model():
+def make_generator_model(input_tensor=None,
+                         input_shape=(100,)):
   """
 
   Returns:
     tf.keras.Model
   """
-  model = tf.keras.Sequential()
-  model.add(layers.Dense(7 * 7 * 256, use_bias=False, input_shape=(100,)))
-  model.add(layers.BatchNormalization())
-  model.add(layers.LeakyReLU())
+  if input_tensor is None:
+    img_input = layers.Input(shape=input_shape)
+  else:
+    if not backend.is_keras_tensor(input_tensor):
+      img_input = layers.Input(tensor=input_tensor, shape=input_shape)
+    else:
+      img_input = input_tensor
 
-  model.add(layers.Reshape((7, 7, 256)))
-  assert model.output_shape == (None, 7, 7, 256)  # Note: None is the batch size
+  x = layers.Dense(7 * 7 * 256,
+                   activation=tf.nn.leaky_relu,
+                   use_bias=False,
+                   name='fc1')(img_input)
+  x = layers.BatchNormalization(name='bn1')(x)
 
-  model.add(layers.Conv2DTranspose(128, (5, 5), strides=(1, 1), padding='same', use_bias=False))
-  assert model.output_shape == (None, 7, 7, 128)
-  model.add(layers.BatchNormalization())
-  model.add(layers.LeakyReLU())
+  x = layers.Reshape(target_shape=(7, 7, 256), name='reshape1')(x)
 
-  model.add(layers.Conv2DTranspose(64, (5, 5), strides=(2, 2), padding='same', use_bias=False))
-  assert model.output_shape == (None, 14, 14, 64)
-  model.add(layers.BatchNormalization())
-  model.add(layers.LeakyReLU())
+  x = layers.Conv2DTranspose(128, (5, 5),
+                             strides=(1, 1),
+                             activation=tf.nn.leaky_relu,
+                             padding='same',
+                             use_bias=False,
+                             name='deconv1')(x)
+  x = layers.BatchNormalization(name='bn2')(x)
 
-  model.add(layers.Conv2DTranspose(1, (5, 5), strides=(2, 2), padding='same', use_bias=False, activation='tanh'))
-  assert model.output_shape == (None, 28, 28, 1)
+  x = layers.Conv2DTranspose(64, (5, 5),
+                             strides=(2, 2),
+                             activation=tf.nn.leaky_relu,
+                             padding='same',
+                             use_bias=False,
+                             name='deconv2')(x)
+  x = layers.BatchNormalization(name='bn3')(x)
 
+  x = layers.Conv2DTranspose(1, (5, 5),
+                             strides=(2, 2),
+                             activation=tf.nn.tanh,
+                             padding='same',
+                             use_bias=False,
+                             name='deconv3')(x)
+
+  if input_tensor is not None:
+    inputs = utils.get_source_inputs(input_tensor)
+  else:
+    inputs = img_input
+
+  model = models.Model(inputs, x, name='Generator_model')
   return model
 
 
 generator = make_generator_model()
+generator.summary()
 
 
 # The discriminator is a CNN-based image classifier.
-def make_discriminator_model():
+def make_discriminator_model(input_tensor=None,
+                             input_shape=(28, 28, 1)):
   """
 
-    Returns:
-      tf.keras.Model
-    """
-  model = tf.keras.Sequential()
-  model.add(layers.Conv2D(64, (5, 5), strides=(2, 2), padding='same',
-                          input_shape=[28, 28, 1]))
-  model.add(layers.LeakyReLU())
-  model.add(layers.Dropout(0.3))
+  Returns:
+    tf.keras.Model
+  """
+  if input_tensor is None:
+    img_input = layers.Input(shape=input_shape)
+  else:
+    if not backend.is_keras_tensor(input_tensor):
+      img_input = layers.Input(tensor=input_tensor, shape=input_shape)
+    else:
+      img_input = input_tensor
 
-  model.add(layers.Conv2D(128, (5, 5), strides=(2, 2), padding='same'))
-  model.add(layers.LeakyReLU())
-  model.add(layers.Dropout(0.3))
+  x = layers.Conv2D(64, (5, 5),
+                    strides=(2, 2),
+                    activation=tf.nn.leaky_relu,
+                    padding='same',
+                    name='conv1')(img_input)
+  x = layers.Dropout(0.3, name='drop1')(x)
 
-  model.add(layers.Flatten())
-  model.add(layers.Dense(1))
+  x = layers.Conv2D(32, (5, 5),
+                    strides=(2, 2),
+                    activation=tf.nn.leaky_relu,
+                    padding='same',
+                    name='conv2')(x)
+  x = layers.Dropout(0.3, name='drop2')(x)
 
+  x = layers.Flatten(name='flatten')(x)
+  x = layers.Dense(units=1, name='fc1')(x)
+
+  if input_tensor is not None:
+    inputs = utils.get_source_inputs(input_tensor)
+  else:
+    inputs = img_input
+
+  model = models.Model(inputs, x, name='Discriminator_model')
   return model
 
 
 discriminator = make_discriminator_model()
+discriminator.summary()
 
 # Define the loss and optimizers
 # This method returns a helper function to compute cross entropy loss

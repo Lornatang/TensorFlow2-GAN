@@ -29,9 +29,9 @@ from PIL import Image
 from IPython import display
 
 # check tf version
-assert tf.__version__ == '2.0.0-beta1'
-"""TensorFlow version must equal '2.0.0-beta1', 
-   please run `pip install -q tensorflow-gpu==2.0.0-beta1"""
+if not tf.__version__ == '2.0.0-beta1':
+  raise Exception("TensorFlow version must equal '2.0.0-beta1', "
+                  "please run `pip install -q tensorflow-gpu==2.0.0-beta1")
 
 # Load and prepare the dataset
 """You will use the MNIST dataset to train the generator and the discriminator. 
