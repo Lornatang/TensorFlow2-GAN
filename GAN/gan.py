@@ -69,7 +69,7 @@ def load_data(buffer_size, batch_size):
 
   # split datasets
   train_images = train_images.reshape(train_images.shape[0], 28, 28, 1).astype('float32')
-  train_images = (train_images - 127.5) / 127.5  # Normalize the images to [-1, 1]
+  train_images = train_images / 255.0  # Normalize the images to [0, 1]
 
   # Batch and shuffle the data
   train_dataset = (
@@ -118,7 +118,7 @@ class GAN(tf.keras.Model):
       layers.ReLU(),
       layers.Conv2DTranspose(1, (3, 3), strides=(1, 1),
                              padding='same',
-                             activation=tf.nn.sigmoid)]
+                             activation='sigmoid')]
     )
     self.disc = tf.keras.Sequential([
       layers.InputLayer(input_shape=self.dims),
