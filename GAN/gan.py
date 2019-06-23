@@ -46,7 +46,7 @@ BUFFER_SIZE = 60000
 BATCH_SIZE = 256
 
 EPOCHS = 50
-noise_dim = 256
+noise_dim = 100
 num_examples_to_generate = 16
 
 img_shape = (28, 28, 1)

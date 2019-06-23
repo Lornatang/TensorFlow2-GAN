@@ -43,7 +43,7 @@ if not tf.__version__ == '2.0.0-beta1':
 The generator will generate handwritten digits resembling the MNIST data."""
 
 BUFFER_SIZE = 60000
-BATCH_SIZE = 256
+BATCH_SIZE = 100
 
 EPOCHS = 50
 noise_dim = 256
