@@ -12,8 +12,7 @@
 # limitations under the License.
 # ==============================================================================
 
-"""
-Autoencoder (AE)
+""" Autoencoder (AE)
 A simple autoencoder network.
 """
 
@@ -124,19 +123,6 @@ class AE(tf.keras.Model):
   @tf.function
   def decoder(self, z):
     return self.dec(z)
-
-  @tf.function
-  def compute_loss(self, x):
-    z = self.encoder(x)
-    _x = self.decoder(z)
-    ae_loss = tf.reduce_mean(tf.square(x - _x))
-    return ae_loss
-
-  @tf.function
-  def compute_gradients(self, x):
-    with tf.GradientTape() as tape:
-      loss = self.compute_loss(x)
-    return tape.gradient(loss, self.trainable_variables)
 
   # This annotation causes the function to be "compiled".
   @tf.function
