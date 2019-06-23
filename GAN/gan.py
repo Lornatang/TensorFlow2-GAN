@@ -231,7 +231,7 @@ def generate_and_save_images(model, epoch, test_input):
     matplotlib.pyplot.figure.
 
   """
-  predictions = model(test_input, training=False)
+  predictions = model(test_input)
 
   fig = plt.figure(figsize=(4, 4))
 
