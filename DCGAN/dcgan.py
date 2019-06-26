@@ -69,7 +69,7 @@ def load_data(buffer_size, batch_size):
 
   # split datasets
   train_images = train_images.reshape(train_images.shape[0], 28, 28, 1).astype('float32')
-  train_images = train_images / 255.0  # Normalize the images to [0, 1]
+  train_images = (train_images - 127.5 / 127.5)  # Normalize the images to [-1, 1]
 
   # Batch and shuffle the data
   train_dataset = (
@@ -287,7 +287,7 @@ def generate_and_save_images(model, epoch, test_input):
 
   for i in range(predictions.shape[0]):
     plt.subplot(4, 4, i + 1)
-    plt.imshow(predictions[i, :, :, 0] * 255.0 + 255.0, cmap='gray')
+    plt.imshow(predictions[i, :, :, 0] * 127.5 + 127.5, cmap='gray')
     plt.axis('off')
 
   plt.savefig(checkpoint_dir + '/' + 'image_at_epoch_{:04d}.png'.format(epoch))
@@ -323,5 +323,5 @@ def create_gif(file_name):
 
 if __name__ == '__main__':
   train_images = load_data(BUFFER_SIZE, BATCH_SIZE)
-  train(train_images, epochs=200)
+  train(train_images, epochs=EPOCHS)
   create_gif('dcgan.gif')
