@@ -27,11 +27,15 @@ from tensorflow.python.keras import backend
 from tensorflow.python.keras import layers
 from tensorflow.python.keras import models
 from tensorflow.python.keras import utils
+import tensorflow_datasets as tfds
 
 import imageio
 import matplotlib.pyplot as plt
 from PIL import Image
 from IPython import display
+
+tfds.disable_progress_bar()
+AUTOTUNE = tf.data.experimental.AUTOTUNE
 
 # check tf version
 if not tf.__version__ == '2.0.0-beta1':
@@ -42,42 +46,82 @@ if not tf.__version__ == '2.0.0-beta1':
 """You will use the MNIST dataset to train the generator and the discriminator. 
 The generator will generate handwritten digits resembling the MNIST data."""
 
-BUFFER_SIZE = 60000
-BATCH_SIZE = 256
+BUFFER_SIZE = 50000
+BATCH_SIZE = 128
 
-EPOCHS = 200
+IMG_HEIGHT = 32
+IMG_WIDTH = 32
+IMG_CHANNELS = 3
+
+EPOCHS = 50
 noise_dim = 100
 num_examples_to_generate = 16
 
-img_shape = (28, 28, 1)
+img_shape = (IMG_HEIGHT, IMG_WIDTH, IMG_CHANNELS)
 
 # We will reuse this seed overtime (so it's easier)
 # to visualize progress in the animated GIF)
 seed = tf.random.normal([num_examples_to_generate, noise_dim])
 
 
+def random_crop(image):
+  cropped_image = tf.image.random_crop(
+    image, size=[IMG_HEIGHT, IMG_WIDTH, 3])
+
+  return cropped_image
+
+
+# normalizing the images to [-1, 1]
+def normalize(image):
+  image = tf.cast(image, tf.float32)
+  image = (image / 127.5) - 1
+  return image
+
+
+def random_jitter(image):
+  # resizing to 32 x 32 x 3
+  image = tf.image.resize(image, [32, 32],
+                          method=tf.image.ResizeMethod.NEAREST_NEIGHBOR)
+
+  # randomly cropping to 32 x 32 x 3
+  image = random_crop(image)
+
+  # random mirroring
+  image = tf.image.random_flip_left_right(image)
+
+  return image
+
+
+def preprocess_image_train(image):
+  image = random_jitter(image)
+  image = normalize(image)
+  return image
+
+
+def preprocess_image_test(image):
+  image = normalize(image)
+  return image
+
+
 def load_data(buffer_size, batch_size):
   """
 
   Returns:
-    tf.keras.datasets.fashion_mnist
+    tensorflow_datasets.load()
 
   """
-
   # load datasets
-  (train_images, _), (_, _) = tf.keras.datasets.fashion_mnist.load_data()
+  dataset, metadata = tfds.load(name='cifar10',
+                                with_info=True,
+                                as_supervised=True)
 
-  # split datasets
-  train_images = train_images.reshape(train_images.shape[0], 28, 28, 1).astype('float32')
-  train_images = train_images / 255.0  # Normalize the images to [0, 1]
+  train_images, train_labels = dataset['image'], dataset['label']
 
-  # Batch and shuffle the data
-  train_dataset = (
-    tf.data.Dataset.from_tensor_slices(train_images)
-      .shuffle(buffer_size)
-      .batch(batch_size)
-  )
-  return train_dataset
+  train_images = train_images.map(
+    preprocess_image_train, num_parallel_calls=AUTOTUNE).cache().shuffle(
+    buffer_size).batch(batch_size)
+
+  return train_images
 
 
 # Both the generator and discriminator are defined using the Keras Sequential API.
