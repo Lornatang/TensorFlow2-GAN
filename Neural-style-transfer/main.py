@@ -18,16 +18,17 @@ This is known as neural style transfer and the technique is outlined in
 A Neural Algorithm of Artistic Style (Gatys et al.)."""
 
 import time
-import functools
 
-import tensorflow as tf
+import matplotlib as mpl
 import matplotlib.pyplot as plt
-import numpy as np
+import tensorflow as tf
 
-content_path = tf.keras.utils.get_file('turtle.jpg', 'https://storage.googleapis.com/download.tensorflow.org'
-                                       '/example_images/Green_Sea_Turtle_grazing_seagrass.jpg')
-style_path = tf.keras.utils.get_file('kandinsky.jpg', 'https://storage.googleapis.com/download.tensorflow.org'
-                                     '/example_images/Vassily_Kandinsky%2C_1913_-_Composition_7.jpg')
+content_path = tf.keras.utils.get_file(
+    'turtle.jpg', 'https://storage.googleapis.com/download.tensorflow.org'
+    '/example_images/Green_Sea_Turtle_grazing_seagrass.jpg')
+style_path = tf.keras.utils.get_file(
+    'kandinsky.jpg', 'https://storage.googleapis.com/download.tensorflow.org'
+    '/example_images/Vassily_Kandinsky%2C_1913_-_Composition_7.jpg')
 
 
 # Visualize the input
@@ -80,7 +81,7 @@ vgg = tf.keras.applications.VGG19(include_top=True, weights='imagenet')
 prediction_probabilities = vgg(x)
 
 # Predict the top five possible categories
-prediction_top_5 = tf.keras.applications.vgg19.decode_predictions(
+predicted_top_5 = tf.keras.applications.vgg19.decode_predictions(
     prediction_probabilities.numpy())[0]
 
 print('prediction img classes.')
@@ -95,7 +96,8 @@ for layer in vgg.layers:
     print(layer.name)
 """
 
-# Choose intermediate layers from the network to represent the style and content of the image:
+# Choose intermediate layers from the network to represent the
+# style and content of the image:
 # Content layer where will pull our features maps
 content_layers = ['block5_conv2']
 
@@ -112,7 +114,8 @@ num_style_layers = len(style_layers)
 
 # build the model
 def vgg_layers(layer_names):
-    """ Creates a vgg model that returns a list of intermediate output values."""
+    """ Creates a vgg model that returns a list of intermediate output values.
+    """
     # Load our model. Load pretrained VGG, trained on imagenet data
     vgg = tf.keras.applications.VGG19(include_top=False, weights='imagenet')
     vgg.trainable = False
@@ -125,7 +128,7 @@ def vgg_layers(layer_names):
 
 # And to create the model.
 style_extractor = vgg_layers(style_layers)
-style_outputs = style_extractor(style_image*255)
+style_outputs = style_extractor(style_image * 255)
 
 # Look at the statistics of each layer's output
 for name, output in zip(style_layers, style_outputs):
@@ -141,8 +144,8 @@ for name, output in zip(style_layers, style_outputs):
 def gram_matrix(input_tensor):
     result = tf.linalg.einsum('bijc,bijd->bcd', input_tensor, input_tensor)
     input_shape = tf.shape(input_tensor)
-    num_locations = tf.cast(input_shape[1]*input_shape[2], tf.float32)
-    return result/(num_locations)
+    num_locations = tf.cast(input_shape[1] * input_shape[2], tf.float32)
+    return result / num_locations
 
 
 # Extract style and content
@@ -157,8 +160,8 @@ class StyleContentModel(tf.keras.models.Model):
         self.vgg.trainable = False
 
     def call(self, inputs):
-        "Expects float input in [0,1]"
-        inputs = inputs*255.0
+        """Expects float input in [0,1]"""
+        inputs = inputs * 255.0
         preprocessed_input = tf.keras.applications.vgg19.preprocess_input(
             inputs)
         outputs = self.vgg(preprocessed_input)
@@ -222,11 +225,13 @@ content_weight = 1e4
 def style_content_loss(outputs):
     style_outputs = outputs['style']
     content_outputs = outputs['content']
-    style_loss = tf.add_n([tf.reduce_mean((style_outputs[name]-style_targets[name])**2)
+    style_loss = tf.add_n([tf.reduce_mean((style_outputs[name] -
+                                           style_targets[name])**2)
                            for name in style_outputs.keys()])
     style_loss *= style_weight / num_style_layers
 
-    content_loss = tf.add_n([tf.reduce_mean((content_outputs[name]-content_targets[name])**2)
+    content_loss = tf.add_n([tf.reduce_mean((content_outputs[name] -
+                                             content_targets[name])**2)
                              for name in content_outputs.keys()])
     content_loss *= content_weight / num_content_layers
     loss = style_loss + content_loss
@@ -248,3 +253,57 @@ def train_step(images):
 train_step(image)
 train_step(image)
 train_step(image)
+
+
+# Total variation loss
+def high_pass_x_y(image):
+    x_var = image[:, :, 1:, :] - image[:, :, :-1, :]
+    y_var = image[:, 1:, :, :] - image[:, :-1, :, :]
+
+    return x_var, y_var
+
+
+def total_variation_loss(image):
+    x_deltas, y_deltas = high_pass_x_y(image)
+    return tf.reduce_mean(x_deltas**2) + tf.reduce_mean(y_deltas**2)
+
+
+# Re-run the optimization
+total_variation_weight = 1e8
+
+
+@tf.function()
+def train_step(image):
+    with tf.GradientTape() as tape:
+        outputs = extractor(image)
+        loss = style_content_loss(outputs)
+        loss += total_variation_weight * total_variation_loss(image)
+
+        grad = tape.gradient(loss, image)
+        opt.apply_gradients([(grad, image)])
+        image.assign(clip_0_1(image))
+
+
+image = tf.Variable(content_image)
+
+
+start = time.time()
+
+epochs = 10
+steps_per_epoch = 100
+
+step = 0
+for n in range(epochs):
+    for m in range(steps_per_epoch):
+        step += 1
+        train_step(image)
+        print(".", end='')
+    imshow(image.read_value())
+    plt.title("Train step: {}".format(step))
+    plt.show()
+
+end = time.time()
+print("Total time: {:.1f}".format(end - start))
+
+file_name = 'kadinsky-turtle.png'
+mpl.image.imsave(file_name, image[0])
