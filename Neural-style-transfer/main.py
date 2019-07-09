@@ -238,23 +238,6 @@ def style_content_loss(outputs):
     return loss
 
 
-# Use tf.GradientTape to update the image.
-@tf.function
-def train_step(images):
-    with tf.GradientTape as tape:
-        outputs = extractor(image)
-        loss = style_content_loss(outputs)
-
-    grad = tape.gradient(loss, image)
-    opt.apply_gradients([(grad, image)])
-    image.assign(clip_0_1(image))
-
-
-train_step(image)
-train_step(image)
-train_step(image)
-
-
 # Total variation loss
 def high_pass_x_y(image):
     x_var = image[:, :, 1:, :] - image[:, :, :-1, :]
