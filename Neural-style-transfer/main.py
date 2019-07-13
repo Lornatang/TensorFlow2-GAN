@@ -159,27 +159,32 @@ class StyleContentModel(tf.keras.models.Model):
         self.num_style_layers = len(style_layers)
         self.vgg.trainable = False
 
-    def call(self, inputs):
-        """Expects float input in [0,1]"""
-        inputs = inputs * 255.0
-        preprocessed_input = tf.keras.applications.vgg19.preprocess_input(
-            inputs)
-        outputs = self.vgg(preprocessed_input)
-        style_outputs, content_outputs = (outputs[:self.num_style_layers],
-                                          outputs[self.num_style_layers:])
+    def call(self, inputs, **kwargs):
+      """Expects float input in [0,1]
 
-        style_outputs = [gram_matrix(style_output)
-                         for style_output in style_outputs]
+      Args:
+        inputs: input img tensor.
+        **kwargs.
+      """
+      inputs = inputs * 255.0
+      preprocessed_input = tf.keras.applications.vgg19.preprocess_input(
+        inputs)
+      outputs = self.vgg(preprocessed_input)
+      style_outputs, content_outputs = (outputs[:self.num_style_layers],
+                                        outputs[self.num_style_layers:])
 
-        content_dict = {content_name: value
-                        for content_name, value
-                        in zip(self.content_layers, content_outputs)}
+      style_outputs = [gram_matrix(style_output)
+                       for style_output in style_outputs]
 
-        style_dict = {style_name: value
-                      for style_name, value
-                      in zip(self.style_layers, style_outputs)}
+      content_dict = {content_name: value
+                      for content_name, value
+                      in zip(self.content_layers, content_outputs)}
 
-        return {'content': content_dict, 'style': style_dict}
+      style_dict = {style_name: value
+                    for style_name, value
+                    in zip(self.style_layers, style_outputs)}
+
+      return {'content': content_dict, 'style': style_dict}
 
 
 extractor = StyleContentModel(style_layers, content_layers)
@@ -209,7 +214,7 @@ for name, output in sorted(results['content'].items()):
 style_targets = extractor(style_image)['style']
 content_targets = extractor(content_image)['content']
 
-image = tf.Variable(content_image)
+img = tf.Variable(content_image)
 
 
 def clip_0_1(image):
@@ -267,7 +272,7 @@ def train_step(image):
         image.assign(clip_0_1(image))
 
 
-image = tf.Variable(content_image)
+img = tf.Variable(content_image)
 
 
 start = time.time()
@@ -279,9 +284,9 @@ step = 0
 for n in range(epochs):
     for m in range(steps_per_epoch):
         step += 1
-        train_step(image)
+        train_step(img)
         print(".", end='')
-    imshow(image.read_value())
+    imshow(img.read_value())
     plt.title("Train step: {}".format(step))
     plt.show()
 
@@ -289,4 +294,4 @@ end = time.time()
 print("Total time: {:.1f}".format(end - start))
 
 file_name = 'kadinsky-turtle.png'
-mpl.image.imsave(file_name, image[0])
+mpl.image.imsave(file_name, img[0])
