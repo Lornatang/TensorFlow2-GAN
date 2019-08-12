@@ -12,7 +12,7 @@
 # limitations under the License.
 # ==============================================================================
 
-""" Variational Autoencoder (VAE)
+""" Variational Autoencoder (vae)
 The original variational autoencoder network, using tensorflow_probability.
 """
 
