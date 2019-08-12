@@ -22,16 +22,16 @@ import glob
 import os
 import time
 
+import imageio
+import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow.python.keras import backend
 from tensorflow.python.keras import layers
 from tensorflow.python.keras import models
 from tensorflow.python.keras import utils
 
-import imageio
-import matplotlib.pyplot as plt
-from PIL import Image
 from IPython import display
+from PIL import Image
 
 # check tf version
 if not tf.__version__ == '2.0.0-beta1':
@@ -43,13 +43,11 @@ if not tf.__version__ == '2.0.0-beta1':
 The generator will generate handwritten digits resembling the MNIST data."""
 
 BUFFER_SIZE = 60000
-BATCH_SIZE = 256
+BATCH_SIZE = 128
 
 EPOCHS = 200
 noise_dim = 256
 num_examples_to_generate = 16
-
-img_shape = (28, 28, 1)
 
 # We will reuse this seed overtime (so it's easier)
 # to visualize progress in the animated GIF)
@@ -65,7 +63,7 @@ def load_data(buffer_size, batch_size):
     """
 
     # load datasets
-    (train_images, _), (_, _) = tf.keras.datasets.fashion_mnist.load_data()
+    (train_images, _), (_, _) = tf.keras.datasets.mnist.load_data()
 
     # split datasets
     train_images = train_images.reshape(
@@ -145,7 +143,7 @@ generator.summary()
 
 # The discriminator is a CNN-based image classifier.
 def make_discriminator_model(input_tensor=None,
-                             input_shape=(28, 28, 1)):
+                             input_shape=(32, 32, 3)):
     """
 
     Returns:
@@ -195,11 +193,28 @@ cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
 # Generator loss
 def generator_loss(fake_output):
+    """
+
+    Args:
+        fake_output:
+
+    Returns:
+
+    """
     return cross_entropy(tf.ones_like(fake_output), fake_output)
 
 
 # Discriminator loss
 def discriminator_loss(real_output, fake_output):
+    """
+
+    Args:
+        real_output:
+        fake_output:
+
+    Returns:
+
+    """
     real_loss = cross_entropy(tf.ones_like(real_output), real_output)
     fake_loss = cross_entropy(tf.zeros_like(fake_output), fake_output)
     total_loss = real_loss + fake_loss
@@ -228,6 +243,11 @@ if not os.path.exists(checkpoint_dir):
 # This annotation causes the function to be "compiled".
 @tf.function
 def train_step(images):
+    """
+
+    Args:
+        images:
+    """
     noise = tf.random.normal([BATCH_SIZE, noise_dim])
 
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
@@ -251,6 +271,12 @@ def train_step(images):
 
 
 def train(dataset, epochs):
+    """
+
+    Args:
+        dataset:
+        epochs:
+    """
     for epoch in range(epochs):
         start = time.time()
 
@@ -294,23 +320,33 @@ def generate_and_save_images(model, epoch, test_input):
 
     for i in range(predictions.shape[0]):
         plt.subplot(4, 4, i + 1)
-        plt.imshow(predictions[i, :, :, 0] * 127.5 + 127.5, cmap='gray')
+        plt.imshow(predictions[i, :, :, 0] * 127.5 + 127.5)
         plt.axis('off')
-
-    plt.savefig(
-        checkpoint_dir +
-        '/' +
-        'image_at_epoch_{:04d}.png'.format(epoch))
+    save_path = os.path.join(checkpoint_dir, f"image_at_epoch_{epoch:04d}.png")
+    plt.savefig(save_path)
     plt.close(fig)
 
 
 # Create a GIF
 # Display a single image using the epoch number
 def display_image(epoch_no):
+    """
+
+    Args:
+        epoch_no:
+
+    Returns:
+
+    """
     return Image.open('image_at_epoch_{:04d}.png'.format(epoch_no))
 
 
 def create_gif(file_name):
+    """
+
+    Args:
+        file_name:
+    """
     with imageio.get_writer(file_name, mode='I') as writer:
         filenames = glob.glob(checkpoint_dir + '/' + 'image*.png')
         filenames = sorted(filenames)
@@ -332,6 +368,6 @@ def create_gif(file_name):
 
 
 if __name__ == '__main__':
-    train_images = load_data(BUFFER_SIZE, BATCH_SIZE)
-    train(train_images, epochs=EPOCHS)
-    create_gif('dcgan.gif')
+    dataset = load_data(BUFFER_SIZE, BATCH_SIZE)
+    train(dataset, epochs=EPOCHS)
+    create_gif('gan.gif')

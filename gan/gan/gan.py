@@ -43,13 +43,11 @@ if not tf.__version__ == '2.0.0-beta1':
 The generator will generate handwritten digits resembling the MNIST data."""
 
 BUFFER_SIZE = 60000
-BATCH_SIZE = 256
+BATCH_SIZE = 128
 
 EPOCHS = 200
 noise_dim = 256
 num_examples_to_generate = 16
-
-img_shape = (28, 28, 1)
 
 # We will reuse this seed overtime (so it's easier)
 # to visualize progress in the animated GIF)
@@ -65,11 +63,11 @@ def load_data(buffer_size, batch_size):
     """
 
     # load datasets
-    (train_images, _), (_, _) = tf.keras.datasets.cifar10.load_data()
+    (train_images, _), (_, _) = tf.keras.datasets.mnist.load_data()
 
     # split datasets
     train_images = train_images.reshape(
-        train_images.shape[0], 32, 32, 3).astype('float32')
+        train_images.shape[0], 28, 28, 1).astype('float32')
     # Normalize the images to [-1, 1]
     train_images = (train_images - 127.5 / 127.5)
 
@@ -99,13 +97,13 @@ def make_generator_model(input_tensor=None,
         else:
             img_input = input_tensor
 
-    x = layers.Dense(8 * 8 * 256,
+    x = layers.Dense(7 * 7 * 256,
                      activation=tf.nn.leaky_relu,
                      use_bias=False,
                      name='fc1')(img_input)
     x = layers.BatchNormalization(name='bn1')(x)
 
-    x = layers.Reshape(target_shape=(8, 8, 256), name='reshape1')(x)
+    x = layers.Reshape(target_shape=(7, 7, 256), name='reshape1')(x)
 
     x = layers.Conv2DTranspose(128, (5, 5),
                                strides=(1, 1),
@@ -123,7 +121,7 @@ def make_generator_model(input_tensor=None,
                                name='deconv2')(x)
     x = layers.BatchNormalization(name='bn3')(x)
 
-    x = layers.Conv2DTranspose(3, (5, 5),
+    x = layers.Conv2DTranspose(1, (5, 5),
                                strides=(2, 2),
                                activation=tf.nn.tanh,
                                padding='same',
