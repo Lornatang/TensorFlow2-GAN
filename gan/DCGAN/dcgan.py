@@ -143,7 +143,7 @@ generator.summary()
 
 # The discriminator is a CNN-based image classifier.
 def make_discriminator_model(input_tensor=None,
-                             input_shape=(32, 32, 3)):
+                             input_shape=(28, 28, 1)):
     """
 
     Returns:
