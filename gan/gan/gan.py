@@ -22,16 +22,16 @@ import glob
 import os
 import time
 
+import imageio
+import matplotlib.pyplot as plt
 import tensorflow as tf
-import tensorflow_datasets as tfds
 from tensorflow.python.keras import backend
 from tensorflow.python.keras import layers
 from tensorflow.python.keras import models
 from tensorflow.python.keras import utils
-import imageio
-import matplotlib.pyplot as plt
-from PIL import Image
+
 from IPython import display
+from PIL import Image
 
 # check tf version
 if not tf.__version__ == '2.0.0-beta1':
@@ -64,33 +64,22 @@ def load_data(buffer_size, batch_size):
 
     """
 
-    # # load datasets
-    # (train_images, _), (_, _) = tf.keras.datasets.fashion_mnist.load_data()
-    #
-    # # split datasets
-    # train_images = train_images.reshape(
-    #     train_images.shape[0], 28, 28, 1).astype('float32')
-    # # Normalize the images to [-1, 1]
-    # train_images = (train_images - 127.5 / 127.5)
-    #
-    # # Batch and shuffle the data
-    # train_dataset = (
-    #     tf.data.Dataset.from_tensor_slices(train_images)
-    #     .shuffle(buffer_size)
-    #     .batch(batch_size)
-    # )
+    # load datasets
+    (train_images, _), (_, _) = tf.keras.datasets.cifar10.load_data()
 
-    mnist_builder = tfds.builder("mnist")
-    mnist_builder.download_and_prepare()
-    mnist_train = mnist_builder.as_dataset(split=tfds.Split.TRAIN)
-    mnist_train = (mnist_train - 127.5 / 127.5)
+    # split datasets
+    train_images = train_images.reshape(
+        train_images.shape[0], 32, 32, 3).astype('float32')
+    # Normalize the images to [-1, 1]
+    train_images = (train_images - 127.5 / 127.5)
 
-    mnist_train = mnist_train.repeat().shuffle(1024).batch(32)
-
-    # prefetch will enable the input pipeline to asynchronously fetch batches while
-    # your model is training.
-    mnist_train = mnist_train.prefetch(tf.data.experimental.AUTOTUNE)
-    return mnist_train
+    # Batch and shuffle the data
+    train_dataset = (
+        tf.data.Dataset.from_tensor_slices(train_images)
+        .shuffle(buffer_size)
+        .batch(batch_size)
+    )
+    return train_dataset
 
 
 # Both the generator and discriminator are defined using the Keras
@@ -110,13 +99,13 @@ def make_generator_model(input_tensor=None,
         else:
             img_input = input_tensor
 
-    x = layers.Dense(7 * 7 * 256,
+    x = layers.Dense(8 * 8 * 256,
                      activation=tf.nn.leaky_relu,
                      use_bias=False,
                      name='fc1')(img_input)
     x = layers.BatchNormalization(name='bn1')(x)
 
-    x = layers.Reshape(target_shape=(7, 7, 256), name='reshape1')(x)
+    x = layers.Reshape(target_shape=(8, 8, 256), name='reshape1')(x)
 
     x = layers.Conv2DTranspose(128, (5, 5),
                                strides=(1, 1),
@@ -134,7 +123,7 @@ def make_generator_model(input_tensor=None,
                                name='deconv2')(x)
     x = layers.BatchNormalization(name='bn3')(x)
 
-    x = layers.Conv2DTranspose(1, (5, 5),
+    x = layers.Conv2DTranspose(3, (5, 5),
                                strides=(2, 2),
                                activation=tf.nn.tanh,
                                padding='same',
@@ -156,7 +145,7 @@ generator.summary()
 
 # The discriminator is a CNN-based image classifier.
 def make_discriminator_model(input_tensor=None,
-                             input_shape=(28, 28, 1)):
+                             input_shape=(32, 32, 3)):
     """
 
     Returns:
@@ -206,11 +195,28 @@ cross_entropy = tf.keras.losses.BinaryCrossentropy(from_logits=True)
 
 # Generator loss
 def generator_loss(fake_output):
+    """
+
+    Args:
+        fake_output:
+
+    Returns:
+
+    """
     return cross_entropy(tf.ones_like(fake_output), fake_output)
 
 
 # Discriminator loss
 def discriminator_loss(real_output, fake_output):
+    """
+
+    Args:
+        real_output:
+        fake_output:
+
+    Returns:
+
+    """
     real_loss = cross_entropy(tf.ones_like(real_output), real_output)
     fake_loss = cross_entropy(tf.zeros_like(fake_output), fake_output)
     total_loss = real_loss + fake_loss
@@ -239,6 +245,11 @@ if not os.path.exists(checkpoint_dir):
 # This annotation causes the function to be "compiled".
 @tf.function
 def train_step(images):
+    """
+
+    Args:
+        images:
+    """
     noise = tf.random.normal([BATCH_SIZE, noise_dim])
 
     with tf.GradientTape() as gen_tape, tf.GradientTape() as disc_tape:
@@ -262,6 +273,12 @@ def train_step(images):
 
 
 def train(dataset, epochs):
+    """
+
+    Args:
+        dataset:
+        epochs:
+    """
     for epoch in range(epochs):
         start = time.time()
 
@@ -305,23 +322,33 @@ def generate_and_save_images(model, epoch, test_input):
 
     for i in range(predictions.shape[0]):
         plt.subplot(4, 4, i + 1)
-        plt.imshow(predictions[i, :, :, 0] * 127.5 + 127.5, cmap='gray')
+        plt.imshow(predictions[i, :, :, 0] * 127.5 + 127.5)
         plt.axis('off')
-
-    plt.savefig(
-        checkpoint_dir +
-        '/' +
-        'image_at_epoch_{:04d}.png'.format(epoch))
+    save_path = os.path.join(checkpoint_dir, f"image_at_epoch_{epoch:04d}.png")
+    plt.savefig(save_path)
     plt.close(fig)
 
 
 # Create a GIF
 # Display a single image using the epoch number
 def display_image(epoch_no):
+    """
+
+    Args:
+        epoch_no:
+
+    Returns:
+
+    """
     return Image.open('image_at_epoch_{:04d}.png'.format(epoch_no))
 
 
 def create_gif(file_name):
+    """
+
+    Args:
+        file_name:
+    """
     with imageio.get_writer(file_name, mode='I') as writer:
         filenames = glob.glob(checkpoint_dir + '/' + 'image*.png')
         filenames = sorted(filenames)
@@ -343,6 +370,6 @@ def create_gif(file_name):
 
 
 if __name__ == '__main__':
-    train_images = load_data(BUFFER_SIZE, BATCH_SIZE)
-    train(train_images, epochs=EPOCHS)
+    dataset = load_data(BUFFER_SIZE, BATCH_SIZE)
+    train(dataset, epochs=EPOCHS)
     create_gif('gan.gif')
