@@ -12,7 +12,7 @@
 # limitations under the License.
 # ==============================================================================
 
-""" Autoencoder (AE)
+""" Autoencoder (ae)
 A simple autoencoder network.
 """
 

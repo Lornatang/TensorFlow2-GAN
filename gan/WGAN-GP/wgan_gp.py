@@ -12,8 +12,8 @@
 # limitations under the License.
 # ==============================================================================
 
-""" Wasserstein GAN with Gradient Penalty (WGAN-GP)
-WGAN-GP is a GAN that improves over the original loss function to
+""" Wasserstein GANs with Gradient Penalty (WGAN-GP)
+WGAN-GP is a GANs that improves over the original loss function to
 improve training stability."""
 
 import glob
